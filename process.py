@@ -27,14 +27,16 @@ class IMDBDataset(Dataset):
     
     def __getitem__(self, idx):
         label, text = self.data[idx]
-        label = 1 if label == 'pos' else 0
+        label = 0 if label == 1 else 1
         text = torch.tensor([self.vocab[token] for token in self.tokenizer(text)], dtype=torch.long)
         return label, text
 
 def collate_batch(batch):
-    labels = torch.tensor([entry[1] for entry in batch], dtype=torch.float)
-    texts = [entry[0] for entry in batch]
+    labels = [entry[0] for entry in batch]
+    texts = [entry[1] for entry in batch]
     lengths = [len(text) for text in texts]
+    labels = torch.tensor(labels, dtype=torch.float32)
+    lengths = torch.tensor(lengths, dtype=torch.long)
     texts = torch.nn.utils.rnn.pad_sequence(texts, batch_first=True)
     return texts, labels, lengths
 

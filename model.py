@@ -15,9 +15,13 @@ class LSTMModel(nn.Module):
         self.fc = nn.Linear(hidden_dim * 2 if bidirectional else hidden_dim, output_dim)
         self.droupout = nn.Dropout(dropout)
         
-    def forward(self, text):
+    def forward(self, text, text_lengths):
         embedded = self.droupout(self.embedding(text))
-        output, (hidden, cell) = self.lstm(embedded)
+        packed_embedded = nn.utils.rnn.pack_padded_sequence(embedded, text_lengths.cpu(), batch_first=True, enforce_sorted=False)
+        packed_output, (hidden, cell) = self.lstm(packed_embedded)
+        
+        output, _ = nn.utils.rnn.pad_packed_sequence(packed_output, batch_first=True)
+        
         if self.lstm.bidirectional:
             hidden = torch.cat((hidden[-2,:,:], hidden[-1,:,:]), dim=1)
         else:

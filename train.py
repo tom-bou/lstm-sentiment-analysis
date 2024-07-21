@@ -11,22 +11,22 @@ with open('config.yaml') as f:
     config = yaml.load(f, Loader=yaml.FullLoader)
 
 wandb.init(project='lstm-imdb', config=config, entity='tomboustedt')
-model = LSTMModel(len(vocab), config['embed_dim'], config['hidden_dim'], config['output_dim'], 
-                  config['n_layers'], config['bidirectional'], config['dropout'])
+model = LSTMModel(len(vocab), config['embedding_dim'], config['hidden_dim'], config['output_dim'], 
+                  config['num_layers'], config['bidirectional'], config['dropout'])
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model.to(device)
 
 criterion = nn.BCEWithLogitsLoss()
-optimizer = optim.Adam(model.parameters(), lr=config['lr'])
+optimizer = optim.Adam(model.parameters())
 
 for i in range(config['num_epochs']):
     model.train()
     running_loss = 0.0
-    for texts, label, lengths in train_loader:
-        text, label, lengths = text.to(device), label.to(device), lengths.to(device)
+    for text, label, length in train_loader:
+        text, label, length = text.to(device), label.to(device), length.to(device)
         optimizer.zero_grad()
-        output = model(texts, lengths).squeeze(1)
+        output = model(text, length).squeeze(1)
         loss = criterion(output, label)
         running_loss += loss.item()
         loss.backward()
@@ -34,13 +34,28 @@ for i in range(config['num_epochs']):
     wandb.log({'loss': running_loss})
     print(f'Epoch: {i+1}, Loss: {loss.item()}')
 
+torch.save(model.state_dict(), 'model.pth')
+wandb.save('model.pth')
+
 correct = 0
 total = 0
-for label, text in test_loader:
-    text, label = text.to(device), label.to(device)
-    with torch.no_grad():
-        output = model(text)
-        loss = criterion(output, label)
+
+model.eval()  
+
+with torch.no_grad():
+    for text, label, length in test_loader:
+        text, label, length = text.to(device), label.to(device), length.to(device)
         
+        output = model(text, length).squeeze(1)
         
-    print(f'Test Loss: {loss.item()}')
+        predictions = torch.round(torch.sigmoid(output))
+        
+        correct += (predictions == label).sum().item()
+        
+        total += label.size(0)
+
+accuracy = correct / total
+print(f'Accuracy: {accuracy * 100:.2f}%')
+        
+print(f'Accuracy: {accuracy}')
+wandb.log({'accuracy': accuracy})
