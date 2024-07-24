@@ -3,3 +3,5 @@ __pycache__
 wandb
 model.pth
 run.sh
+Transformer_model.py
+LSTM_model.py

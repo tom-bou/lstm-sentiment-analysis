@@ -1,8 +1,17 @@
-embedding_dim: 100
-hidden_dim: 256
-num_layers: 2
+#LSTM
 output_dim: 1
 bidirectional: True
-dropout: 0.5
 
-num_epochs: 10
+
+#Transformer
+num_heads: 8
+num_layers: 4
+learning_rate: 0.001
+
+#Training
+hidden_dim: 256
+embedding_dim: 128
+num_epochs: 20
+dropout: 0.1
+model: Transformer #LSTM or Transformer
+
